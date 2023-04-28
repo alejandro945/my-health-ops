@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-deployment
+  namespace: client
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: my-health-client:latest
+        ports:
+        - containerPort: ${PORT}
+        env:
+        - name: PORT
+          valueFrom:
+            secretKeyRef:
+              name: client-sc
+              key: PORT
+        - name: SERVER_URL
+          valueFrom:
+            secretKeyRef:
+              name: client-sc
+              key: SERVER_URL
+```

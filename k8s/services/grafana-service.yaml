@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: metrics
+  labels:
+    app: grafana
+spec:
+  type: ClusterIP 
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: 3000
+  selector:
+      app: grafana
