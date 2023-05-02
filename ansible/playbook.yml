@@ -1,0 +1,72 @@
+---
+- name: Configuración de CouchDB en VM de Azure
+  hosts: azure_vm
+  become: yes
+
+  vars:
+    couchdb_admin_user: admin
+    couchdb_admin_password: 88888888
+    couchdb_port: 5984
+
+  tasks:
+  - name: Instalar paquetes necesarios
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - apt-transport-https
+      - software-properties-common
+
+  - name: Agregar repositorio CouchDB
+    apt_repository:
+      repo: deb https://apache.bintray.com/couchdb-deb bionic main
+      state: present
+      filename: couchdb
+      update_cache: yes
+      keyserver: keyserver.ubuntu.com
+      key: 8756C4F765C9AC3CB6B85D62379CE192D401AB61
+
+  - name: Instalar CouchDB
+    apt:
+      name: couchdb
+      state: present
+
+  - name: Configurar CouchDB
+    lineinfile:
+      path: /opt/couchdb/etc/local.ini
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+      state: present
+    with_items:
+      - { regexp: '^admin =.*', line: 'admin = {{ couchdb_admin_user }}:{{ couchdb_admin_password }}' }
+      - { regexp: '^bind_address =.*', line: 'bind_address = 0.0.0.0' }
+
+  - name: Reiniciar CouchDB
+    service:
+      name: couchdb
+      state: restarted
+
+  - name: Abrir puerto CouchDB
+    ufw:
+      rule: allow
+      port: "{{ couchdb_port }}"
+
+  - name: Verificar conexión a CouchDB
+    wait_for:
+      host: localhost
+      port: "{{ couchdb_port }}"
+      timeout: 30
+
+  - name: Verificar estado de CouchDB
+    uri:
+      url: http://localhost:{{ couchdb_port }}
+      method: GET
+      return_content: yes
+      status_code: 200
+      headers:
+        Accept: "application/json"
+    register: couchdb_status
+
+  - name: Imprimir resultado de la verificación
+    debug:
+      var: couchdb_status
