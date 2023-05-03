@@ -4,6 +4,14 @@ resource "azurerm_resource_group" "main" {
   location = var.region
 }
 
+# Ip estática para la máquina virtual
+resource "azurerm_public_ip" "main" {
+    name                = "${var.prefix_name}-public-ip"
+    location            = var.region
+    resource_group_name = azurerm_resource_group.main.name
+    allocation_method   = "Static"
+}
+
 # Creación de la red virtual para el clúster de AKS y la máquina virtual
 resource "azurerm_virtual_network" "main" {
   name                = "${var.prefix_name}-network"
@@ -16,10 +24,13 @@ resource "azurerm_virtual_network" "main" {
     address_prefix = "10.0.1.0/24"
   }
 
-  subnet {
-    name           = "vm_subnet"
-    address_prefix = "10.0.2.0/24"
-  }
+}
+
+resource "azurerm_subnet" "vm_subnet" {
+    name                 = "${var.prefix_name}-subnet"
+    resource_group_name  = azurerm_resource_group.main.name
+    virtual_network_name = azurerm_virtual_network.main.name
+    address_prefixes     = ["10.0.1.0/24"]
 }
 
 # Creación del grupo de seguridad de red para permitir la comunicación entre recursos
@@ -90,14 +101,50 @@ resource "azurerm_network_interface" "main" {
 
   ip_configuration {
     name                          = "${var.prefix_name}-vm-nic-ipconfig"
-    subnet_id                     = azurerm_virtual_network.main.subnet_vm.id
+    subnet_id                     = azurerm_subnet.vm_subnet.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.main.id
   }
+}
+
+resource "azurerm_network_security_group" "main" {
+    name                = "${var.prefix_name}-sg"
+    location            = var.region
+    resource_group_name = azurerm_resource_group.main.name
+
+    security_rule {
+        name                       = "SSH"
+        priority                   = 1001
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "22"
+        source_address_prefix      = "*"
+        destination_address_prefix = "*"
+    }
+  #CouchDB
+    security_rule {
+      name = "COUCHDB"
+      priority = 1002
+      direction = "Inbound"
+      access = "Allow"
+      protocol = "Tcp"
+      source_port_range = "*"
+      destination_port_range = "5984"
+      source_address_prefix = "*"
+      destination_address_prefix = "*"
+    }
+}
+
+resource "azurerm_network_interface_security_group_association" "main" {
+    network_interface_id      = azurerm_network_interface.main.id
+    network_security_group_id = azurerm_network_security_group.main.id
 }
 
 # Creación de la máquina virtual para la base de datos CouchDB
 resource "azurerm_linux_virtual_machine" "main" {
-  name                  = "${var.prefix_name}-vm"
+  name                  = "${var.prefix_name}-vm-couchdb"
   location              = azurerm_resource_group.main.location
   resource_group_name   = azurerm_resource_group.main.name
   size                  = "Standard_DS2_v2"
