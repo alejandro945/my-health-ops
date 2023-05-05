@@ -15,9 +15,9 @@ spec:
     spec:
       containers:
       - name: server
-        image: my-health-server:latest
+        image: alejandro945/my-health-server:1
         ports:
-        - containerPort: ${PORT}
+        - containerPort: 9000
         env:
         - name: DATABASE_URL
           valueFrom:

@@ -1,4 +1,4 @@
-apiVersion: autoscaling/v2beta2
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: server-hpa
@@ -14,4 +14,6 @@ spec:
   - type: Resource
     resource:
       name: cpu
-      targetAverageUtilization: 50
+      target:
+        type: Utilization
+        averageUtilization: 50

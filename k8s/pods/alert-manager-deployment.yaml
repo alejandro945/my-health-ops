@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: alertmanager
-  namespace: monitoring
+  namespace: metrics
   labels:
     k8s-app: alertmanager
     kubernetes.io/cluster-service: "true"

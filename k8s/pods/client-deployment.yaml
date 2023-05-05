@@ -15,9 +15,9 @@ spec:
     spec:
       containers:
       - name: client
-        image: my-health-client:latest
+        image: alejandro945/my-health-dev_client:2
         ports:
-        - containerPort: ${PORT}
+        - containerPort: 8083
         env:
         - name: PORT
           valueFrom:
@@ -29,4 +29,3 @@ spec:
             secretKeyRef:
               name: client-sc
               key: SERVER_URL
-```
