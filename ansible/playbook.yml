@@ -1,72 +1,77 @@
----
-- name: Configuración de CouchDB en VM de Azure
+- name: Instalación de Docker y Docker Compose en Ubuntu
   hosts: azure_vm
-  become: yes
-
-  vars:
-    couchdb_admin_user: admin
-    couchdb_admin_password: 88888888
-    couchdb_port: 5984
-
+  become: true
+  
   tasks:
-  - name: Instalar paquetes necesarios
-    apt:
-      name: "{{ item }}"
-      state: present
-    with_items:
-      - apt-transport-https
-      - software-properties-common
+    # Actualizar el cache de paquetes
+    - name: Actualizar el cache de paquetes
+      apt:
+        update_cache: yes
 
-  - name: Agregar repositorio CouchDB
-    apt_repository:
-      repo: deb https://apache.bintray.com/couchdb-deb bionic main
-      state: present
-      filename: couchdb
-      update_cache: yes
-      keyserver: keyserver.ubuntu.com
-      key: 8756C4F765C9AC3CB6B85D62379CE192D401AB61
+    # Instalar dependencias para Docker
+    - name: Instalar dependencias para Docker
+      apt:
+        name: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
 
-  - name: Instalar CouchDB
-    apt:
-      name: couchdb
-      state: present
+    # Agregar la clave GPG oficial de Docker
+    - name: Agregar la clave GPG oficial de Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-  - name: Configurar CouchDB
-    lineinfile:
-      path: /opt/couchdb/etc/local.ini
-      regexp: "{{ item.regexp }}"
-      line: "{{ item.line }}"
-      state: present
-    with_items:
-      - { regexp: '^admin =.*', line: 'admin = {{ couchdb_admin_user }}:{{ couchdb_admin_password }}' }
-      - { regexp: '^bind_address =.*', line: 'bind_address = 0.0.0.0' }
+    # Agregar el repositorio de Docker al sources.list.d
+    - name: Agregar el repositorio de Docker al sources.list.d
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+        state: present
 
-  - name: Reiniciar CouchDB
-    service:
-      name: couchdb
-      state: restarted
+    # Actualizar el cache de paquetes de nuevo (para que encuentre el paquete de Docker)
+    - name: Actualizar el cache de paquetes de nuevo (para que encuentre el paquete de Docker)
+      apt:
+        update_cache: yes
 
-  - name: Abrir puerto CouchDB
-    ufw:
-      rule: allow
-      port: "{{ couchdb_port }}"
+    # Instalar Docker
+    - name: Instalar Docker
+      apt:
+        name: docker-ce
+        state: present
 
-  - name: Verificar conexión a CouchDB
-    wait_for:
-      host: localhost
-      port: "{{ couchdb_port }}"
-      timeout: 30
+    # Añadir el usuario actual al grupo de Docker
+    - name: Añadir el usuario actual al grupo de Docker
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
 
-  - name: Verificar estado de CouchDB
-    uri:
-      url: http://localhost:{{ couchdb_port }}
-      method: GET
-      return_content: yes
-      status_code: 200
-      headers:
-        Accept: "application/json"
-    register: couchdb_status
+    # Instalar Docker Compose
+    - name: Instalar Docker Compose
+      shell: |
+        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      args:
+        creates: /usr/local/bin/docker-compose
+    
+    - name: Establecer vm.max_map_count en el kernel
+      sysctl:
+        name: vm.max_map_count
+        value: "262144"
+        state: present
+        reload: yes
+    
+    - name: Copiar archivo de configuración de COUCHDB
+      copy:
+        src: docker-compose.yml
+        dest: /home/{{ ansible_user }}/docker-compose.yml
 
-  - name: Imprimir resultado de la verificación
-    debug:
-      var: couchdb_status
+    # Ejecutar un archivo docker-compose.yml
+    - name: Ejecutar docker-compose.yml
+      command: docker-compose up -d
+      args:
+        chdir: /home/{{ ansible_user }}/
+      become_user: "{{ ansible_user }}"
+      become_method: su
