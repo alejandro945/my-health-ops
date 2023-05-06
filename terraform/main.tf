@@ -110,9 +110,13 @@ resource "azurerm_kubernetes_cluster" "main" {
   dns_prefix          = "${var.prefix_name}-aks"
 
   default_node_pool {
-    name       = "default"
-    node_count = 1
-    vm_size    = "Standard_D2_v2"
+    name                = "default"
+    node_count          = 1
+    vm_size             = "Standard_D2_v2"
+    os_type             = "Linux"
+    enable_auto_scaling = true
+    max_count           = 3
+    min_count           = 1
   }
 
   identity {
@@ -159,7 +163,7 @@ resource "azurerm_network_interface" "main" {
 # Asociación de la interfaz de red con el grupo de seguridad de red
 resource "azurerm_network_interface_security_group_association" "main" {
   network_interface_id      = azurerm_network_interface.main.id
-  network_security_group_id = azurerm_network_security_group.main.id
+  network_security_group_id = azurerm_network_security_group.vm.id
 }
 
 # Creación de la máquina virtual para la base de datos CouchDB

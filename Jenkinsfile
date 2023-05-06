@@ -3,7 +3,7 @@ pipeline {
         label "jenkins-agent"
     }
     environment {
-        APP_NAME = "complete-prodcution-e2e-pipeline"
+        APP_NAME = "my-health"
     }
 
     stages {
@@ -16,7 +16,7 @@ pipeline {
     
         stage("Checkout from SCM") {
             steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/dmancloud/gitops-complete-prodcution-e2e-pipeline'
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/alejandro945/my-health-ops'
             }
         }
     
@@ -25,9 +25,14 @@ pipeline {
         stage("Update the Deployment Tags") {
             steps {
                 sh """
-                    cat deployment.yaml
-                    sed -i 's/${APP_NAME}.*/${APP_NAME}:${IMAGE_TAG}/g' deployment.yaml
-                    cat deployment.yaml
+                    echo "Server"
+                    cat ./k8s/pod/server-deployment.yaml
+                    sed -i 's/${APP_NAME}.*/${APP_NAME}:${IMAGE_TAG}/g' ./k8s/pod/server-deployment.yaml
+                    cat ./k8s/pod/server-deployment.yaml
+                    echo "Client"
+                    cat ./k8s/pod/client-deployment.yaml
+                    sed -i 's/${APP_NAME}.*/${APP_NAME}:${IMAGE_TAG}/g' ./k8s/pod/client-deployment.yaml
+                    cat ./k8s/pod/client-deployment.yaml
                 """
             }
         }
@@ -35,13 +40,13 @@ pipeline {
         stage("Push the changed deployment file to Git") {
             steps {
                 sh """
-                    git config --global user.name "dmancloud"
-                    git config --global user.email "dinesh@dman.cloud"
-                    git add deployment.yaml
-                    git commit -m "Updated Deployment Manifest"
+                    git config --global user.name "alejandro945"
+                    git config --global user.email "alejo8677@gmail.com"
+                    git add .
+                    git commit -m "Updated Deployment Manifest Automation"
                 """
                 withCredentials([gitUsernamePassword(credentialsId: 'github', gitToolName: 'Default')]) {
-                    sh "git push https://github.com/dmancloud/gitops-complete-prodcution-e2e-pipeline main"
+                    sh "git push https://github.com/alejandro945/my-health-ops dev"
                 }
             }
         }
