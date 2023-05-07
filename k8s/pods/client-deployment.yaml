@@ -18,18 +18,6 @@ spec:
         image: alejandro945/my-health-dev_client:2
         ports:
         - containerPort: 8083
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 8083
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8083
-          initialDelaySeconds: 5
-          periodSeconds: 10
         env:
         - name: PORT
           valueFrom:

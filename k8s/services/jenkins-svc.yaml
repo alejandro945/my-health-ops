@@ -8,10 +8,11 @@ metadata:
       prometheus.io/path:   /
       prometheus.io/port:   '8080'
 spec:
+  type: LoadBalancer
+  loadBalancerIP: 20.253.97.127
   selector:
     app: jenkins-server
-  type: NodePort
   ports:
     - port: 8080
       targetPort: 8080
-      nodePort: 32000
+      # nodePort: 32000

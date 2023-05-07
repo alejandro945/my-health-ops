@@ -2,13 +2,13 @@
 This repository contains the infrastructure as code for the My Health application. Also it has configuration files for the CI/CD pipeline.
 ## Infrastructure Provisioning
 
-What we will build?
+- What will we build?
 
-![Infra](./assets/infra.png)
+    ![Infra](./assets/infra.png)
 
-About our ingress controller:
+- About our ingress controller:
 
-![ingress](./assets/ingress-diagram.png)
+    ![ingress](./assets/ingress-diagram.png)
 
 1. Build our infrastructure using terraform with the following command:
 
@@ -47,10 +47,15 @@ azure_vm-host ansible_host=host@X.X.X.X
 3. Run our playbook with the following command:
 
 ```sh
-cd ansible && ansible-playbook -i hosts.yml playbook.yml --extra-vars "@secrets.yml" -e "ansible_ssh_pass={{ansible_password}}"
+cd ansible && ansible-playbook -i hosts.yml playbook.yml --extra-vars "@secrets.yml" -e "ansible_ssh_pass={{ansible_password}}" --ssh-extra-args='-o StrictHostKeyChecking=no'
 ```
 ![Ansible](./assets/ansible.png)
 
+Wait for 5 minutes [User Binding] and then run the following playbook:
+
+```sh
+ansible-playbook -i hosts.yml db.yml --extra-vars "@secrets.yml" -e "ansible_ssh_pass={{ansible_password}}" --ssh-extra-args='-o StrictHostKeyChecking=no'
+```
 
 ### Kubernetes bash script
 
@@ -79,21 +84,23 @@ az aks get-credentials --resource-group my-health-rg --name my-health-aks --file
 kubectl config get-contexts
 kubectl config use-context $1
 ```
-4. Change our database endpoint and pvc node affinity of jenkins
+4. Change our database endpoint, pvc node affinity of jenkins and public jetstack ip address in the following files:
 
 ```sh
 #./k8s/secrets/server-sc.yaml
-http://admin:password@X.X.X.X:5984/ # already base encoded
+http://admin:password@X.X.X.X:5984/ # already base encoded aHR0cDovL2FkbWluOnBhc3N3b3JkQDIwLjEyNy41Mi4xMjg6NTk4NC8=
 #./k8s/volumes/jenkins-pvc.yaml
 values:
     - aks-default-39522763-vmss000000 # Aks node name
+# ./k8s/services/jenkins-svc.yaml
+loadBalancerIP: X.X.X.X # K8S Default public ip address
 ```
 
-<!-- 5. Enable ingress addon in our cluster
+5. Enable ingress addon in our cluster for expose our frontend application [**Optional** in client sefrvice change the type to load balancer]
 
 ```sh
 az aks enable-addons --addons http_application_routing --name my-health-aks --resource-group my-health-rg
-``` -->
+``` 
 
 6. Run our bash script with the following command:
 
@@ -101,6 +108,12 @@ az aks enable-addons --addons http_application_routing --name my-health-aks --re
 cd k8s && chmod 777 deploy.sh && ./deploy.sh
 ```
 ![k8s](./assets/k8s.png)
+
+7. See nginx ingress public ip address
+
+```sh
+kubectl get svc -n kube-system
+```
 
 
 ## Evidence of the application running on cloud

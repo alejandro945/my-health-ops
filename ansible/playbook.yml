@@ -69,16 +69,8 @@
         src: docker-compose.yml
         dest: /home/{{ ansible_user }}/docker-compose.yml
 
-    - name: Dar permisos al directorio
+    - name: Dar permisos al archivo docker-compose.yml
       become: true
       file:
         path: ./docker-compose.yml
         mode: '0777'
-
-    # Ejecutar un archivo docker-compose.yml
-    - name: Ejecutar docker-compose.yml
-      command: docker-compose up -d
-      args:
-        chdir: /home/{{ ansible_user }}/
-      become_user: "{{ ansible_user }}"
-      become_method: su

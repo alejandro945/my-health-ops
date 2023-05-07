@@ -4,6 +4,7 @@ metadata:
   name: client-svc
   namespace: client
 spec:
+  # type: LoadBalancer
   selector:
     app: client
   ports:

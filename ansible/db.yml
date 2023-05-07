@@ -1,0 +1,13 @@
+- name: Couch DB Deployment
+  hosts: azure_vm
+  become: true
+  vars_files:
+    - secrets.yml
+  tasks:
+    # Ejecutar un archivo docker-compose.yml
+    - name: Ejecutar docker-compose.yml
+      command: docker-compose up -d
+      args:
+        chdir: /home/{{ ansible_user }}/
+      become_user: "{{ ansible_user }}"
+      become_method: su
