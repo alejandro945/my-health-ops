@@ -1,22 +1,13 @@
-# Infrastructure Provisioning
-cd terraform && terraform init && terraform apply -auto-approve
-cd ../
-# Database Configuration Management
-cd ansible && ansible-playbook -i inventory/hosts playbook.yml
-cd ../
-# Kubernetes Configuration Management
-az aks get-credentials --resource-group $1 --name $2 --file ./kubeconfig
-kubectl config use-context $2
 ## K8s Resources Creation
-kubectl apply -f ./k8s/namespaces/
-kubectl apply -f ./k8s/configMaps/
-kubectl apply -f ./k8s/clusterRoles/
-kubectl apply -f ./k8s/volumes/
-kubectl apply -f ./k8s/secrets/
-kubectl apply -f ./k8s/pods/
-kubectl apply -f ./k8s/hpa/
-kubectl apply -f ./k8s/services/
-kubectl apply -f ./k8s/ingress/
+kubectl apply -f ./namespaces/
+kubectl apply -f ./configMaps/
+kubectl apply -f ./clusterRoles/
+kubectl apply -f ./volumes/
+kubectl apply -f ./secrets/
+kubectl apply -f ./pods/
+kubectl apply -f ./hpa/
+kubectl apply -f ./services/
+kubectl apply -f ./ingress/
 kubectl apply -n runners -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 # Ingress to runners and metrics pods
 # kubectl port-forward --address 0.0.0.0 service/grafana-service --namespace metrics 30000:80

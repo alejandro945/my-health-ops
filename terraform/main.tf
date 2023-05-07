@@ -16,26 +16,97 @@ resource "azurerm_virtual_network" "main" {
 
 # Creación de la subred para la máquina virtual [CouchDB]
 resource "azurerm_subnet" "vm_subnet" {
-  name                 = "${var.prefix_name}-subnet"
+  name                 = "${var.prefix_name}-vm-subnet"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-# Creación de la subred para el aks cluster
-resource "azurerm_subnet" "aks_subnet" {
-  name                 = "${var.prefix_name}-subnet"
+# Creación de la subred para el app gateway
+resource "azurerm_subnet" "app_gwsubnet" {
+  name                 = "${var.prefix_name}-app-gw-subnet"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-# Ip publica para la máquina virtual
+# Ip publica para la máquina virtual [Base de datos --> Follow versions Private Link Service 🫰]
 resource "azurerm_public_ip" "main" {
-  name                = "${var.prefix_name}-public-ip"
+  name                = "${var.prefix_name}-vm-public-ip"
   location            = var.region
   resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
+}
+
+# Ip publica para el load balancer ingress controller
+resource "azurerm_public_ip" "ingress" {
+  name                = "${var.prefix_name}-ingress-public-ip"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+# Since these variables are re-used - a locals block makes this more maintainable
+locals {
+  backend_address_pool_name      = "${azurerm_virtual_network.main.name}-beap"
+  frontend_port_name             = "${azurerm_virtual_network.main.name}-feport"
+  frontend_ip_configuration_name = "${azurerm_virtual_network.main.name}-feip"
+  http_setting_name              = "${azurerm_virtual_network.main.name}-be-htst"
+  listener_name                  = "${azurerm_virtual_network.main.name}-httplstn"
+  request_routing_rule_name      = "${azurerm_virtual_network.main.name}-rqrt"
+}
+# Load balancer para el aks cluster
+resource "azurerm_application_gateway" "ingress" {
+  name                = "${var.prefix_name}-ingress-lb"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+
+  sku {
+    name     = "Standard_v2"
+    tier     = "Standard_v2"
+    capacity = 1
+  }
+
+  gateway_ip_configuration {
+    name      = "${var.prefix_name}-appgw-ipconfig"
+    subnet_id = azurerm_subnet.app_gwsubnet.id
+  }
+
+  frontend_port {
+    name = local.frontend_port_name
+    port = 80
+  }
+
+  frontend_ip_configuration {
+    name                 = local.frontend_ip_configuration_name
+    public_ip_address_id = azurerm_public_ip.ingress.id
+  }
+  backend_address_pool {
+    name = local.backend_address_pool_name
+  }
+
+  backend_http_settings {
+    name                  = local.http_setting_name
+    cookie_based_affinity = "Disabled"
+    port                  = 80
+    protocol              = "Http"
+    request_timeout       = 20
+  }
+
+  http_listener {
+    name                           = local.listener_name
+    frontend_ip_configuration_name = local.frontend_ip_configuration_name
+    frontend_port_name             = local.frontend_port_name
+    protocol                       = "Http"
+  }
+
+  request_routing_rule {
+    name                       = local.request_routing_rule_name
+    rule_type                  = "Basic"
+    http_listener_name         = local.listener_name
+    backend_address_pool_name  = local.backend_address_pool_name
+    backend_http_settings_name = local.http_setting_name
+  }
 }
 
 ### -----------------------SECURITY--------------------- ###
@@ -70,67 +141,31 @@ resource "azurerm_network_security_group" "vm" {
   }
 }
 
-# 
-resource "azurerm_network_security_group" "aks" {
-  name                = "${var.prefix_name}-aks-security-group"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-
-  security_rule {
-    name                       = "allow_http"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "allow_ssh"
-    priority                   = 101
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-}
-
 ### -----------------------COMPUTE--------------------- ###
 # Creación del clúster de AKS
 resource "azurerm_kubernetes_cluster" "main" {
-  name                = "${var.prefix_name}-aks"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  dns_prefix          = "${var.prefix_name}-aks"
-
+  name                             = "${var.prefix_name}-aks"
+  location                         = azurerm_resource_group.main.location
+  resource_group_name              = azurerm_resource_group.main.name
+  dns_prefix                       = "${var.prefix_name}-aks"
+  http_application_routing_enabled = false
   default_node_pool {
     name                = "default"
     node_count          = 1
     vm_size             = "Standard_D2_v2"
-    os_type             = "Linux"
     enable_auto_scaling = true
     max_count           = 3
     min_count           = 1
+  }
+  ingress_application_gateway {
+    gateway_id = azurerm_application_gateway.ingress.id
   }
 
   identity {
     type = "SystemAssigned"
   }
 
-  network_profile {
-    network_plugin = "azure"
-    dns_service_ip = "10.0.2.10"
-    service_cidr   = "10.0.2.0/24"
-    pod_cidr       = "10.244.0.0/16"
-  }
-
-  depends_on = [azurerm_network_security_group.aks]
+  depends_on = [azurerm_application_gateway.ingress]
 }
 
 # Recuperación de la configuración de kubectl

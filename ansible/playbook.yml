@@ -1,7 +1,8 @@
 - name: Instalación de Docker y Docker Compose en Ubuntu
   hosts: azure_vm
   become: true
-  
+  vars_files:
+    - secrets.yml
   tasks:
     # Actualizar el cache de paquetes
     - name: Actualizar el cache de paquetes
@@ -67,6 +68,12 @@
       copy:
         src: docker-compose.yml
         dest: /home/{{ ansible_user }}/docker-compose.yml
+
+    - name: Dar permisos al directorio
+      become: true
+      file:
+        path: ./docker-compose.yml
+        mode: '0777'
 
     # Ejecutar un archivo docker-compose.yml
     - name: Ejecutar docker-compose.yml
