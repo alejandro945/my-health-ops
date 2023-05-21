@@ -2,6 +2,9 @@ pipeline {
     agent any
     environment {
         APP_NAME = "my-health"
+        ACR_REPO = "myhealthcontainerregistry.azurecr.io"
+        CLIENT_NAME = "${ACR_REPO}" + "/" + "${APP_NAME}" + "-client"
+        SERVER_NAME = "${ACR_REPO}" + "/" + "${APP_NAME}" + "-server"
     }
 
     stages {
@@ -26,11 +29,11 @@ pipeline {
                 sh """
                     echo "Server"
                     cat ./k8s/pod/server-deployment.yaml
-                    sed -i 's/${APP_NAME}.*/${APP_NAME}:${IMAGE_TAG}/g' ./k8s/pod/server-deployment.yaml
+                    sed -i 's/${SERVER_NAME}.*/${SERVER_NAME}:${IMAGE_TAG}/g' ./k8s/pod/server-deployment.yaml
                     cat ./k8s/pod/server-deployment.yaml
                     echo "Client"
                     cat ./k8s/pod/client-deployment.yaml
-                    sed -i 's/${APP_NAME}.*/${APP_NAME}:${IMAGE_TAG}/g' ./k8s/pod/client-deployment.yaml
+                    sed -i 's/${CLIENT_NAME}.*/${CLIENT_NAME}:${IMAGE_TAG}/g' ./k8s/pod/client-deployment.yaml
                     cat ./k8s/pod/client-deployment.yaml
                 """
             }

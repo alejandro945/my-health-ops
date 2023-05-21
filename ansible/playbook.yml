@@ -4,7 +4,7 @@
   vars_files:
     - secrets.yml
   tasks:
-
+    # ----------------------UPDATE CACHE----------------------
     # Actualizar el cache de paquetes
     - name: Actualizar el cache de paquetes
       apt:
@@ -33,16 +33,25 @@
         state: present
 
     # ----------------------NODE INSTALLATION----------------------
-    # Agregar repositiorio de nodejs 18.x
-    - name: Agregar repositiorio de nodejs 18.x
-      apt_repository:
-        repo: deb https://deb.nodesource.com/node_18.x {{ ansible_lsb.codename }} main
+    - name: Add Node.js repository key
+      apt_key:
+        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
         state: present
 
-    # Instalar nodejs 18
-    - name: Instalar nodejs
+    - name: Agregar repositorio de Node.js
+      shell: curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+
+    # Actualizar el cache de paquetes de nuevo (para que encuentre el paquete de Node.js
+    - name: Instalar Node.js
       apt:
         name: nodejs
+        state: present
+        update_cache: yes
+
+    # Instalar npm
+    - name: Install npm
+      apt:
+        name: npm
         state: present
 
     # ----------------------DOCKER INSTALLATION----------------------
@@ -94,7 +103,7 @@
       args:
         creates: /usr/local/bin/docker-compose
         
-    # ----------------------COUCHDB INSTALLATION----------------------
+    # ----------------------COUCHDB CONFIGURATION----------------------
     - name: Establecer vm.max_map_count en el kernel
       sysctl:
         name: vm.max_map_count

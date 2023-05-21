@@ -34,7 +34,7 @@ terraform destroy -auto-approve
 
 ## Configuration Management
 
-### CouchDB Ansibel Playbook
+### CouchDB and pipeline slave Ansible Playbook
 
 1. Install Ansible in your local machine
 
@@ -95,9 +95,11 @@ kubectl config use-context $1
 
 ```sh
 #./k8s/secrets/server-sc.yaml
-http://admin:password@X.X.X.X:5984/ # already base encoded aHR0cDovL2FkbWluOnBhc3N3b3JkQDIwLjEyNy41Mi4xMjg6NTk4NC8=
+http://admin:password@X.X.X.X:5984/ 
+# already base encoded echo "http://admin:password@X.X.X.X:5984/ " | base64
+# aHR0cDovL2FkbWluOnBhc3N3b3JkQDIwLjEyNy41Mi4xMjg6NTk4NC8=
 # ./k8s/services/jenkins-svc.yaml
-loadBalancerIP: X.X.X.X # K8S Default public ip address (Search in aks)
+loadBalancerIP: X.X.X.X # K8S Default public ip address (aks public ip)
 ```
 
 **Optional**: Enable ingress addon in our cluster for expose our frontend application 
@@ -116,8 +118,9 @@ cd k8s && chmod 777 deploy.sh && ./deploy.sh
 6. See nginx ingress public ip address or client service public ip address
 
 ```sh
-kubectl get svc -n kube-system
 kubectl get svc -n client
+# Optional
+kubectl get svc -n kube-system
 ```
 
 7. Unlock jenkins server
@@ -135,6 +138,8 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 #admin - 847b07c1a71d494eab2de1d4a4e1479a
 ```
 
+- Install default plugins continue as admin and save and finish
+
 ### CI / CD Pipeline configuration
 
 #### Sonarqube configuration
@@ -147,13 +152,16 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 
 #### Jenkins configuration
 
-- Install default plugins and continue as admin
+- Configure node runner in manage jenkins -> manage nodes and clouds -> new node and add node with the following configuration: docker-agent as name, vm ip address, remote root directory /home/healthadmin/jenkins, permanent agent, launch method: launch agent via ssh, credentials: add credentials with username and password, host key verification strategy: non verifying verification strategy
 
-- Configure node runner in manage jenkins -> manage nodes and clouds -> new node and add node with the following configuration: vm ip address, remote root directory /home/healthadmin/jenkins with 775 access, permanent agent, launch method: launch agent via ssh, credentials: add credentials with username and password, host key verification strategy: non verifying verification strategy
+- Gor to admin -> Dashboard -> Configure and Click on Add new Token, write a name 'jenkins_api_token' for it and then press Generate. We need to store this Token in a safe place because there is no way to recover it in the future unless creating a new one.
 
-- Click on Add new Token, write a name 'JENKINS_API_TOKEN' for it and then press Generate. We need to store this Token in a safe place because there is no way to recover it in the future unless creating a new one.
+- Go to admin -> Credentials -> System -> Global credentials -> Add credentials and add:
 
-- Go to admin -> Credentials -> System -> Global credentials -> Add credentials and add 1. sonarqube server with sonar-credentials as id and secret text for sonar server token, 2. username and password for github credentials, 3. Username with password for acr_credentials. 4. Secret text for jenkins_api_token for trigger cd pipeline as JENKINS_API_TOKEN
+    1. Sonarqube server with sonar_credentials as id and secret text for sonar server token.
+    2. Username and password for github.
+    3. Username with password for acr_credentials. 
+    4. Secret text for jenkins_api_token for trigger cd pipeline as jenkins_api_token.
 
 - Install sonarqube scanner in manage jenkins -> manage plugins -> available and install without restart.
 
@@ -161,7 +169,9 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 
 - Go to manage jenkins -> Configure system -> sonarqube servers and check env variables nad add sonarqube server with sonar as name and http://sonar-svc.runners.svc.cluster.local:9000 as server url and auth token as sonar-credentials
 
-- Configure your pipeline, go create a job, select pipeline and enter dev-pipeline as name. Then select GitHub project with the following url: https://github.com/alejandro945/my-health-dev, GitHub hook trigger for GITScm polling and  Pipeline script from SCM.
+- Configure your CI pipeline, go create a job, select pipeline and enter dev-pipeline as name. Then select GitHub project with the following url: https://github.com/alejandro945/my-health-dev, GitHub hook trigger for GITScm polling and Pipeline script from SCM main branch.
+
+- Configure your CD pipeline, go create a job, select pipeline and enter ops-pipeline as name. Then select discard old builds with max of 2, select this project is parameterized-string parameter and IMAGE_TAG as name, select trigger builds remotely with **gitops-token** as string, finally Pipeline script from SCM **dev** branch with the following url:https://github.com/alejandro945/my-health-ops, .
 
 #### Github configuration
 
@@ -207,7 +217,7 @@ kubectl port-forward --address 0.0.0.0 service/prometheus-service --namespace me
 
 ```sh
 kubectl port-forward --address 0.0.0.0 service/argocd-server --namespace runners 32000:443
-# admin - admin
+# admin - kubectl -n runners get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ``` 
 ![argocd](./assets/argocd.png)
 
