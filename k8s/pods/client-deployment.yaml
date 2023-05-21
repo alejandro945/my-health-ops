@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: client
-        image: alejandro945/my-health-dev_client:2
+        image: myhealthcontainerregistry.azurecr.io/my-health-client:1
         ports:
         - containerPort: 8083
         env:

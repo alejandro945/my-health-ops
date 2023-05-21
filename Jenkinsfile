@@ -3,8 +3,8 @@ pipeline {
     environment {
         APP_NAME = "my-health"
         ACR_REPO = "myhealthcontainerregistry.azurecr.io"
-        CLIENT_NAME = "${ACR_REPO}" + "/" + "${APP_NAME}" + "-client"
-        SERVER_NAME = "${ACR_REPO}" + "/" + "${APP_NAME}" + "-server"
+        CLIENT_NAME = "${APP_NAME}" + "-client"
+        SERVER_NAME = "${APP_NAME}" + "-server"
     }
 
     stages {
