@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources: 
-  - client-ns.yaml
-  - server-ns.yaml
-  - metrics-ns.yaml
-  - runners-ns.yaml
+  - client-ns.yml
+  - server-ns.yml
+  - metrics-ns.yml
+  - runners-ns.yml
