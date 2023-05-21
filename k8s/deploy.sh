@@ -9,6 +9,7 @@ kubectl apply -f ./hpa/
 kubectl apply -f ./services/
 kubectl apply -f ./ingress/
 kubectl apply -n runners -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f argo-app.yaml
 # Ingress to runners and metrics pods
 # kubectl port-forward --address 0.0.0.0 service/grafana-service --namespace metrics 30000:80
 # kubectl port-forward --address 0.0.0.0 service/prometheus-service --namespace metrics 31000:8080
