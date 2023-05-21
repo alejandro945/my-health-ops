@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources: 
+  - alert-manager-deployment.yaml
+  - client-deployment.yaml
+  - db-sonarqube.yaml
+  - grafana-deployment.yaml
+  - jenkins-deployment.yaml
+  - prometheus-deployment.yaml
+  - server-deployment.yml
+  - sonarqube-deployment.yaml
