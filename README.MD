@@ -172,6 +172,8 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
     3. Username with password for acr_credentials. 
     4. Secret text for jenkins_api_token for trigger cd pipeline as jenkins_api_token.
 
+![auth](./assets/token.png)
+
 - Install sonarqube scanner in manage jenkins -> manage plugins -> available and install without restart.
 
 - Go to manage jenkins -> Global tool configuration and add sonarqube scanner with **sonar** as name
@@ -181,6 +183,8 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 - Configure your CI pipeline, go create a job, select pipeline and enter dev-pipeline as name. Then select GitHub project with the following url: https://github.com/alejandro945/my-health-dev, GitHub hook trigger for GITScm polling and Pipeline script from SCM main branch.
 
 - Configure your CD pipeline, go create a job, select pipeline and enter ops-pipeline as name. Then select discard old builds with max of 2, select this project is parameterized-string parameter and IMAGE_TAG as name, select trigger builds remotely with **gitops-token** as string, finally Pipeline script from SCM **dev** branch with the following url:https://github.com/alejandro945/my-health-ops, .
+
+![pipe](./assets/pipeline.png)
 
 #### Github configuration
 
@@ -201,6 +205,8 @@ kubectl -n runners get secret argocd-initial-admin-secret -o jsonpath="{.data.pa
 2. Vinculate repository
 
 3. Create Project with my-health as name
+
+4. Enable auto sync
 
 ## Evidence of the application running on cloud
 
