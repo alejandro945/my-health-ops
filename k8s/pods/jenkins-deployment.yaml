@@ -19,7 +19,7 @@ spec:
       serviceAccountName: jenkins-admin
       containers:
         - name: jenkins
-          image: jenkins/jenkins:lts
+          image: alejandro945/my-jenkins:latest
           resources:
             limits:
               memory: "2Gi"
@@ -51,7 +51,12 @@ spec:
           volumeMounts:
             - name: jenkins-data
               mountPath: /var/jenkins_home
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
       volumes:
         - name: jenkins-data
           persistentVolumeClaim:
               claimName: jenkins-pv-claim
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock

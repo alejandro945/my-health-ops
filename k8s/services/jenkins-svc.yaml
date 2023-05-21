@@ -9,7 +9,7 @@ metadata:
       prometheus.io/port:   '8080'
 spec:
   type: LoadBalancer
-  loadBalancerIP: 20.253.97.127
+  loadBalancerIP: 4.156.152.6
   selector:
     app: jenkins-server
   ports:

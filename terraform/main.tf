@@ -62,6 +62,15 @@ resource "azurerm_network_security_group" "vm" {
   }
 }
 
+### -----------------------CONTAINER REGISTRY--------------------- ###
+resource "azurerm_container_registry" "main" {
+  name                     = "myHealthContainerRegistry"
+  resource_group_name      = azurerm_resource_group.main.name
+  location                 = azurerm_resource_group.main.location
+  sku                      = "Basic"
+  admin_enabled            = true
+}
+
 ### -----------------------COMPUTE--------------------- ###
 # Creación del clúster de AKS
 resource "azurerm_kubernetes_cluster" "main" {
@@ -80,18 +89,6 @@ resource "azurerm_kubernetes_cluster" "main" {
   identity {
     type = "SystemAssigned"
   }
-}
-
-# Recuperación de la configuración de kubectl
-data "azurerm_kubernetes_cluster" "main" {
-  name                = azurerm_kubernetes_cluster.main.name
-  resource_group_name = azurerm_resource_group.main.name
-}
-
-# Creación de un archivo local para almacenar la configuración de kubectl
-resource "local_sensitive_file" "kubeconfig" {
-  content  = data.azurerm_kubernetes_cluster.main.kube_config_raw
-  filename = "${path.module}/kubeconfig"
 }
 
 # Creando una interfaz de red y una máquina virtual. 
@@ -129,7 +126,7 @@ resource "azurerm_linux_virtual_machine" "main" {
   source_image_reference {
     publisher = "Canonical"
     offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    sku       = "18.04-LTS"
     version   = "latest"
   }
 

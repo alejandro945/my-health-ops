@@ -1,12 +1,12 @@
 pipeline {
-    agent {
-        label "jenkins-agent"
-    }
+    agent any
+
     environment {
         APP_NAME = "my-health"
     }
 
     stages {
+
         stage("Cleanup Workspace") {
             steps {
                 cleanWs()
@@ -16,7 +16,7 @@ pipeline {
     
         stage("Checkout from SCM") {
             steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/alejandro945/my-health-ops'
+                git branch: 'dev', credentialsId: 'github', url: 'https://github.com/alejandro945/my-health-ops'
             }
         }
     

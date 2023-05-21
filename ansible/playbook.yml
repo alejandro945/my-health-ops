@@ -18,6 +18,31 @@
           - curl
           - gnupg-agent
           - software-properties-common
+    
+    # Agregar repo jdk java 11
+    - name: Agregar repositorio ppa:openjdk-r/ppa
+      apt_repository:
+        repo: ppa:openjdk-r/ppa
+        state: present
+
+    # Instalar jdk java 11
+    - name: actualizar apt e instalar openjdk-11-jdk
+      apt:
+        update_cache: yes
+        name: openjdk-11-jdk
+        state: present
+
+    # Agregar repositiorio de nodejs 18.x
+    - name: Agregar repositiorio de nodejs 18.x
+      apt_repository:
+        repo: deb https://deb.nodesource.com/node_18.x {{ ansible_lsb.codename }} main
+        state: present
+
+    # Instalar nodejs 18
+    - name: Instalar nodejs
+      apt:
+        name: nodejs
+        state: present
 
     # Agregar la clave GPG oficial de Docker
     - name: Agregar la clave GPG oficial de Docker

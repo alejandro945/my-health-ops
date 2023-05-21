@@ -16,9 +16,15 @@ This repository contains the infrastructure as code for the My Health applicatio
 cd terraform && terraform init && terraform apply -auto-approve
 ```
 
-2. Save your terraform outputs [Our Infrastructure creatio last aprox 10 minutes]
+2. Save your terraform outputs [Our Infrastructure creation last aprox 5 minutes]
 
 ![Resources](./assets/az-resources.png)
+
+To see acr sensitive password on your terminal run the following command:
+
+```sh
+terraform output -no-color acr_password
+```
 
 **Note:** Delete our infrastructure using terraform with the following command:
 
@@ -37,7 +43,7 @@ sudo apt update
 apt-get install ansible
 ```
 
-2. Change the IP address in the inventory/hosts file
+2. Change the IP address in the inventory/hosts file with the public IP address of the VM created in the previous step.
 
 ```sh
 [azure_vm]
@@ -51,7 +57,7 @@ cd ansible && ansible-playbook -i hosts.yml playbook.yml --extra-vars "@secrets.
 ```
 ![Ansible](./assets/ansible.png)
 
-Wait for 5 minutes [User Binding] and then run the following playbook:
+Wait for 1 minutes [User Binding] and then run the following playbook:
 
 ```sh
 ansible-playbook -i hosts.yml db.yml --extra-vars "@secrets.yml" -e "ansible_ssh_pass={{ansible_password}}" --ssh-extra-args='-o StrictHostKeyChecking=no'
@@ -68,6 +74,7 @@ cd ~/.kube
 **Note: For delete an specific context in your kubeconfig file**
 
 ```sh
+kubectl config get-contexts
 kubectl config delete-context $1
 ```
 
@@ -84,19 +91,16 @@ az aks get-credentials --resource-group my-health-rg --name my-health-aks --file
 kubectl config get-contexts
 kubectl config use-context $1
 ```
-4. Change our database endpoint, pvc node affinity of jenkins and public jetstack ip address in the following files:
+4. Change our database endpoint, pvc node affinity of jenkins and public jetstack ip address in the following files: (https://www.base64encode.org/)
 
 ```sh
 #./k8s/secrets/server-sc.yaml
 http://admin:password@X.X.X.X:5984/ # already base encoded aHR0cDovL2FkbWluOnBhc3N3b3JkQDIwLjEyNy41Mi4xMjg6NTk4NC8=
-#./k8s/volumes/jenkins-pvc.yaml
-values:
-    - aks-default-39522763-vmss000000 # Aks node name
 # ./k8s/services/jenkins-svc.yaml
-loadBalancerIP: X.X.X.X # K8S Default public ip address
+loadBalancerIP: X.X.X.X # K8S Default public ip address (Search in aks)
 ```
 
-5. Enable ingress addon in our cluster for expose our frontend application [**Optional** in client sefrvice change the type to load balancer]
+5. Enable ingress addon in our cluster for expose our frontend application [**Optional** in client service change the type to load balancer]
 
 ```sh
 az aks enable-addons --addons http_application_routing --name my-health-aks --resource-group my-health-rg
@@ -109,13 +113,61 @@ cd k8s && chmod 777 deploy.sh && ./deploy.sh
 ```
 ![k8s](./assets/k8s.png)
 
-7. See nginx ingress public ip address
+7. See nginx ingress public ip address or client service public ip address
 
 ```sh
 kubectl get svc -n kube-system
+kubectl get svc -n client
 ```
 
+8. Unlock jenkins server
 
+- Get jenkins public ip address
+
+```sh
+kubectl get svc -n runners
+```
+
+- Go to jenkins public ip address and unlock jenkins with the following command:
+
+```sh
+kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '{print $1}') -- cat /var/jenkins_home/secrets/initialAdminPassword
+#admin - 847b07c1a71d494eab2de1d4a4e1479a
+```
+
+### CI / CD Pipeline configuration
+
+#### Sonarqube configuration
+
+- Go to sonarqube public ip address and login with admin and admin credentials
+
+- Create token in administration -> security -> users -> admin -> generate token
+
+- Change admin permissions to user in administration -> security -> users -> admin -> permissions -> apply all
+
+#### Jenkins configuration
+
+- Install default plugins and continue as admin
+
+- Click on Add new Token, write a name 'JENKINS_API_TOKEN' for it and then press Generate. We need to store this Token in a safe place because there is no way to recover it in the future unless creating a new one.
+
+- Go to admin -> Credentials -> System -> Global credentials -> Add credentials and add 1. sonarqube server with sonar-credentials as id and secret text for sonar server token, 2. username and password for github credentials, 3. Username with password for acr_credentials. 4. Secret text for jenkins_api_token for trigger cd pipeline as JENKINS_API_TOKEN
+
+- Install sonarqube scanner in manage jenkins -> manage plugins -> available and install without restart.
+
+- Go to manage jenkins -> Global tool configuration and add sonarqube scanner with **sonar** as name
+
+- Go to manage jenkins -> Configure system -> sonarqube servers and check env variables nad add sonarqube server with sonar as name and http://sonar-svc.runners.svc.cluster.local:9000 as server url and auth token as sonar-credentials
+
+- Configure your pipeline, go create a job, select pipeline and enter dev-pipeline as name. Then select GitHub project with the following url: https://github.com/alejandro945/my-health-dev, GitHub hook trigger for GITScm polling and  Pipeline script from SCM.
+
+#### Github configuration
+
+1. To create our GitHub Webhook, we need to open our repository and click on settings. Then click on Webhooks and Add webhook
+
+2. Inside the Payload URL text box, we need to write the direction to our Jenkins Server ip, plus: /github-webhook/. The payload must have both / to work, otherwise it'll throw some error. Inside the Secret box, we'll paste the Jenkins API Token from section bellow.
+
+Check your pipeline creating a commit in your repository. [Build at the first time manually]
 ## Evidence of the application running on cloud
 
 ### CouchDB
@@ -168,6 +220,7 @@ kubectl port-forward --address 0.0.0.0 service/jenkins-service --namespace runne
 
 ```sh
 kubectl port-forward --address 0.0.0.0 service/sonar-svc --namespace runners 34000:9000
+# admin - admin
 # admin - password
 ```
 ![sonar](./assets/sonarqube.png)
