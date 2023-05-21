@@ -100,27 +100,27 @@ http://admin:password@X.X.X.X:5984/ # already base encoded aHR0cDovL2FkbWluOnBhc
 loadBalancerIP: X.X.X.X # K8S Default public ip address (Search in aks)
 ```
 
-5. Enable ingress addon in our cluster for expose our frontend application [**Optional** in client service change the type to load balancer]
+**Optional**: Enable ingress addon in our cluster for expose our frontend application 
 
 ```sh
 az aks enable-addons --addons http_application_routing --name my-health-aks --resource-group my-health-rg
 ``` 
 
-6. Run our bash script with the following command:
+5. Run our bash script with the following command:
 
 ```sh
 cd k8s && chmod 777 deploy.sh && ./deploy.sh
 ```
 ![k8s](./assets/k8s.png)
 
-7. See nginx ingress public ip address or client service public ip address
+6. See nginx ingress public ip address or client service public ip address
 
 ```sh
 kubectl get svc -n kube-system
 kubectl get svc -n client
 ```
 
-8. Unlock jenkins server
+7. Unlock jenkins server
 
 - Get jenkins public ip address
 
@@ -149,6 +149,8 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 
 - Install default plugins and continue as admin
 
+- Configure node runner in manage jenkins -> manage nodes and clouds -> new node and add node with the following configuration: vm ip address, remote root directory /home/healthadmin/jenkins with 775 access, permanent agent, launch method: launch agent via ssh, credentials: add credentials with username and password, host key verification strategy: non verifying verification strategy
+
 - Click on Add new Token, write a name 'JENKINS_API_TOKEN' for it and then press Generate. We need to store this Token in a safe place because there is no way to recover it in the future unless creating a new one.
 
 - Go to admin -> Credentials -> System -> Global credentials -> Add credentials and add 1. sonarqube server with sonar-credentials as id and secret text for sonar server token, 2. username and password for github credentials, 3. Username with password for acr_credentials. 4. Secret text for jenkins_api_token for trigger cd pipeline as JENKINS_API_TOKEN
@@ -167,7 +169,7 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 
 2. Inside the Payload URL text box, we need to write the direction to our Jenkins Server ip, plus: /github-webhook/. The payload must have both / to work, otherwise it'll throw some error. Inside the Secret box, we'll paste the Jenkins API Token from section bellow.
 
-Check your pipeline creating a commit in your repository. [Build at the first time manually]
+Check your pipeline creating a commit in your repository. [Build at the first time manually] 💥
 ## Evidence of the application running on cloud
 
 ### CouchDB

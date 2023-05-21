@@ -1,24 +1,24 @@
-- name: Instalación de Docker y Docker Compose en Ubuntu
+- name: Instalación de Docker, java y nodejs para Couchdb y jenkins agent
   hosts: azure_vm
   become: true
   vars_files:
     - secrets.yml
   tasks:
+
     # Actualizar el cache de paquetes
     - name: Actualizar el cache de paquetes
       apt:
         update_cache: yes
 
-    # Instalar dependencias para Docker
-    - name: Instalar dependencias para Docker
-      apt:
-        name: 
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - gnupg-agent
-          - software-properties-common
+    # ----------------------JENKINS FOLDER----------------------
+    # Crear jenkins folder with 777 access
+    - name: Crear jenkins folder with 777 access
+      file:
+        path: /home/{{ ansible_user }}/jenkins
+        state: directory
+        mode: '0777'
     
+    # ----------------------JAVA INSTALLATION----------------------
     # Agregar repo jdk java 11
     - name: Agregar repositorio ppa:openjdk-r/ppa
       apt_repository:
@@ -32,6 +32,7 @@
         name: openjdk-11-jdk
         state: present
 
+    # ----------------------NODE INSTALLATION----------------------
     # Agregar repositiorio de nodejs 18.x
     - name: Agregar repositiorio de nodejs 18.x
       apt_repository:
@@ -43,6 +44,17 @@
       apt:
         name: nodejs
         state: present
+
+    # ----------------------DOCKER INSTALLATION----------------------
+    # Instalar dependencias para Docker
+    - name: Instalar dependencias para Docker
+      apt:
+        name: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
 
     # Agregar la clave GPG oficial de Docker
     - name: Agregar la clave GPG oficial de Docker
@@ -81,7 +93,8 @@
         chmod +x /usr/local/bin/docker-compose
       args:
         creates: /usr/local/bin/docker-compose
-    
+        
+    # ----------------------COUCHDB INSTALLATION----------------------
     - name: Establecer vm.max_map_count en el kernel
       sysctl:
         name: vm.max_map_count
