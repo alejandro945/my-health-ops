@@ -28,13 +28,13 @@ pipeline {
             steps {
                 sh """
                     echo "Server"
-                    cat ./k8s/pod/server-deployment.yaml
-                    sed -i 's/${SERVER_NAME}.*/${SERVER_NAME}:${IMAGE_TAG}/g' ./k8s/pod/server-deployment.yaml
-                    cat ./k8s/pod/server-deployment.yaml
+                    cat ./k8s/pods/server-deployment.yml
+                    sed -i 's/${SERVER_NAME}.*/${SERVER_NAME}:${IMAGE_TAG}/g' ./k8s/pods/server-deployment.yml
+                    cat ./k8s/pods/server-deployment.yml
                     echo "Client"
-                    cat ./k8s/pod/client-deployment.yaml
-                    sed -i 's/${CLIENT_NAME}.*/${CLIENT_NAME}:${IMAGE_TAG}/g' ./k8s/pod/client-deployment.yaml
-                    cat ./k8s/pod/client-deployment.yaml
+                    cat ./k8s/pods/client-deployment.yaml
+                    sed -i 's/${CLIENT_NAME}.*/${CLIENT_NAME}:${IMAGE_TAG}/g' ./k8s/pods/client-deployment.yaml
+                    cat ./k8s/pods/client-deployment.yaml
                 """
             }
         }
