@@ -98,24 +98,33 @@ kubectl config use-context $1
 http://admin:password@X.X.X.X:5984/ 
 # already base encoded echo "http://admin:password@X.X.X.X:5984/ " | base64
 # aHR0cDovL2FkbWluOnBhc3N3b3JkQDIwLjEyNy41Mi4xMjg6NTk4NC8=
-# ./k8s/services/jenkins-svc.yaml
+# ./k8s/services/client-svc.yaml
 loadBalancerIP: X.X.X.X # K8S Default public ip address (aks public ip)
+# dev Jenkinsfile
+# http://52.149.201.78/ in cd trigger
 ```
 
-**Optional**: Enable ingress addon in our cluster for expose our frontend application 
+**Optional** Enable ingress addon in our cluster for expose our runners apps [sonar and jenkins] and create ingress yaml
 
 ```sh
 az aks enable-addons --addons http_application_routing --name my-health-aks --resource-group my-health-rg
+az aks disable-addons --addons http_application_routing --name my-health-aks --resource-group my-health-rg --no-wait
 ``` 
 
-5. Run our bash script with the following command:
+5. Configure ACR integration for existing AKS clusters. The az aks update --attach-acr command uses the permissions of the user running the command to create the ACR role assignment. This role is assigned to the kubelet managed identity [3 minutes]
+
+```sh
+az aks update -n my-health-aks -g my-health-rg --attach-acr myHealthContainerRegistry
+```
+
+6. Run our bash script with the following command:
 
 ```sh
 cd k8s && chmod 777 deploy.sh && ./deploy.sh
 ```
 ![k8s](./assets/k8s.png)
 
-6. See nginx ingress public ip address or client service public ip address
+7. See nginx ingress public ip address or client service public ip address
 
 ```sh
 kubectl get svc -n client
@@ -123,7 +132,7 @@ kubectl get svc -n client
 kubectl get svc -n kube-system
 ```
 
-7. Unlock jenkins server
+8. Unlock jenkins server
 
 - Get jenkins public ip address
 
@@ -152,7 +161,7 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 
 #### Jenkins configuration
 
-- Configure node runner in manage jenkins -> manage nodes and clouds -> new node and add node with the following configuration: docker-agent as name, vm ip address, remote root directory /home/healthadmin/jenkins, permanent agent, launch method: launch agent via ssh, credentials: add credentials with username and password, host key verification strategy: non verifying verification strategy
+- Configure node runner in manage jenkins -> manage nodes and clouds -> new node and add node with the following configuration: docker-agent as name, vm ip address, remote root directory /home/healthadmin/jenkins, permanent agent, launch method: launch agent via ssh, node_credentials: add credentials with username and password, host key verification strategy: non verifying verification strategy
 
 - Gor to admin -> Dashboard -> Configure and Click on Add new Token, write a name 'jenkins_api_token' for it and then press Generate. We need to store this Token in a safe place because there is no way to recover it in the future unless creating a new one.
 
@@ -180,6 +189,19 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 2. Inside the Payload URL text box, we need to write the direction to our Jenkins Server ip, plus: /github-webhook/. The payload must have both / to work, otherwise it'll throw some error. Inside the Secret box, we'll paste the Jenkins API Token from section bellow.
 
 Check your pipeline creating a commit in your repository. [Build at the first time manually] 💥
+
+#### ArgoCD configuration
+
+1. Get initial password
+
+```sh
+kubectl -n runners get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
+2. Vinculate repository
+
+3. Create Project with my-health as name
+
 ## Evidence of the application running on cloud
 
 ### CouchDB

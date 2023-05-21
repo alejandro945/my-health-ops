@@ -41,18 +41,17 @@
     - name: Agregar repositorio de Node.js
       shell: curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 
+    # Actualizar el cache de paquetes
+    - name: Actualizar el cache de paquetes
+      apt:
+        update_cache: yes
+        
     # Actualizar el cache de paquetes de nuevo (para que encuentre el paquete de Node.js
     - name: Instalar Node.js
       apt:
         name: nodejs
         state: present
         update_cache: yes
-
-    # Instalar npm
-    - name: Install npm
-      apt:
-        name: npm
-        state: present
 
     # ----------------------DOCKER INSTALLATION----------------------
     # Instalar dependencias para Docker
