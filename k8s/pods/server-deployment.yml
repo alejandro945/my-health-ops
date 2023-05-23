@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: myhealthcontainerregistry.azurecr.io/my-health-server:1.0.0-9
+        image: myhealthcontainerregistry.azurecr.io/my-health-server:1.0.0-2
         ports:
         - containerPort: 9000
         env:
