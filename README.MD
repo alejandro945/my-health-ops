@@ -96,11 +96,11 @@ kubectl config use-context $1
 ```sh
 #./k8s/secrets/server-sc.yaml
 http://admin:password@X.X.X.X:5984/ 
-# already base encoded echo "http://admin:password@X.X.X.X:5984/ " | base64
+# already base encoded echo "http://admin:password@X.X.X.X:5984/" | base64
 # aHR0cDovL2FkbWluOnBhc3N3b3JkQDIwLjEyNy41Mi4xMjg6NTk4NC8=
-# ./k8s/services/client-svc.yaml
+# ./k8s/services/jenkins-svc.yaml
 loadBalancerIP: X.X.X.X # K8S Default public ip address (aks public ip)
-# dev Jenkinsfile
+# dev /Jenkinsfile
 # http://52.149.201.78/ in cd trigger
 ```
 
@@ -182,7 +182,7 @@ kubectl exec -it -n runners $(kubectl get pods -n runners | grep jenkins | awk '
 
 - Configure your CI pipeline, go create a job, select pipeline and enter dev-pipeline as name. Then select GitHub project with the following url: https://github.com/alejandro945/my-health-dev, GitHub hook trigger for GITScm polling and Pipeline script from SCM main branch.
 
-- Configure your CD pipeline, go create a job, select pipeline and enter ops-pipeline as name. Then select discard old builds with max of 2, select this project is parameterized-string parameter and IMAGE_TAG as name, select trigger builds remotely with **gitops-token** as string, finally Pipeline script from SCM **dev** branch with the following url:https://github.com/alejandro945/my-health-ops, .
+- Configure your CD pipeline, go create a job, select pipeline and enter ops-pipeline as name. Then select discard old builds with max of 2, select this project is parameterized-string parameter and IMAGE_TAG as name, select trigger builds remotely with **gitops-token** as string, finally Pipeline script from SCM **dev** branch with the following url:https://github.com/alejandro945/my-health-ops.
 
 ![pipe](./assets/pipeline.png)
 
@@ -237,16 +237,16 @@ kubectl port-forward --address 0.0.0.0 service/grafana-service --namespace metri
 
 ```sh
 kubectl port-forward --address 0.0.0.0 service/prometheus-service --namespace metrics 31000:8080
-````
-![prometheus](./assets/prometheus.png)
 ```
+![prometheus](./assets/prometheus.png)
 
 ### ArgoCD
 
 ```sh
 kubectl port-forward --address 0.0.0.0 service/argocd-server --namespace runners 32000:443
 # admin - kubectl -n runners get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-``` 
+```
+
 ![argocd](./assets/argocd.png)
 
 ### Jenkins
